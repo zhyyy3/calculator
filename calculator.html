@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四则运算计算器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+
+        .calculator {
+            width: 400px;
+            /* 增加宽度 */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            padding: 20px;
+        }
+
+        .display {
+            width: 100%;
+            height: 60px;
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: right;
+            padding-right: 10px;
+            font-size: 30px;
+            box-sizing: border-box;
+        }
+
+        /* 设置计算器列表，几行几列 */
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .buttons button {
+            width: 100%;
+            /* 增加按钮高度 */
+            height: 60px;
+            /* 增加字体大小 */
+            font-size: 25px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .buttons button:hover {
+            background-color: #f0f0f0;
+        }
+
+        .buttons button:active {
+            background-color: #e0e0e0;
+        }
+
+        .span-1 {
+            grid-column: span 1;
+        }
+
+        .history {
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+
+        .history-item {
+            margin: 5px 0;
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="calculator">
+        <div class="display" id="display"></div>
+        <div class="buttons">
+            <button onclick="clearDisplay()">AC</button>
+            <button class="span-1" onclick="deleteChar()">C</button>
+            <button onclick="appendChar('%')">%</button>
+            <button onclick="appendChar('*')">×</button>
+            <button onclick="calculateSquareRoot()">√</button>
+            <button onclick="appendChar('1')">1</button>
+            <button onclick="appendChar('2')">2</button>
+            <button onclick="appendChar('3')">3</button>
+            <button onclick="appendChar('/')">÷</button>
+            <button onclick="calculateLogBase10()">lg</button>
+            <button onclick="appendChar('4')">4</button>
+            <button onclick="appendChar('5')">5</button>
+            <button onclick="appendChar('6')">6</button>
+            <button onclick="appendChar('+')">+</button>
+            <button onclick="calculateNaturalLog('ln')">ln</button>
+            <button onclick="appendChar('7')">7</button>
+            <button onclick="appendChar('8')">8</button>
+            <button onclick="appendChar('9')">9</button>
+            <button onclick="appendChar('-')">-</button>
+            <button onclick="promptForExponent()">x^y</button>
+            <button onclick="appendChar('.')">.</button>
+            <button onclick="appendChar('0')">0</button>
+            <button class="span-1" onclick="calculate()">=</button>
+            <button onclick="appendChar('(')">(</button>
+            <button onclick="appendChar(')')">)</button>
+        </div>
+        <div class="history" id="history"></div>
+    </div>
+
+    <script>
+        let history = [];
+        let isResultDisplayed = false;
+
+        //检查错误功能
+        function appendChar(char) {
+            const display = document.getElementById('display');
+
+            // 检查是否为错误状态
+            if (display.textContent === '错误') {
+                // 如果是数字，直接添加到显示框
+                if (!isNaN(char) || char === '.' || char === '%') {
+                    clearDisplay(); // 清空显示屏
+                    if (char === '%') {
+                        display.textContent += '0.'; // 将百分比转换为小数形式
+                    
+                    }
+                    else {
+                        display.textContent += char; // 显示点击的数字
+                    }
+                }
+                else {
+                    clearDisplay(); // 其他键清空显示屏
+                }
+            }
+            else {
+                // 其他正常情况
+                if (isResultDisplayed && !['+', '-', '*', '/'].includes(char)) {
+                    clearDisplay();
+                }
+                if (char === '%') {
+                    let currentText = display.textContent;
+                    // 将当前显示的数字转换为小数形式
+                    let number = parseFloat(currentText);
+                    display.textContent = number / 100;
+                }
+                else if (char === 'lg') {
+                    display.textContent += 'lg(';
+                }
+                else if (char === 'ln') {
+                    display.textContent += 'ln(';
+                }
+                else if (char === '√') {
+                    display.textContent += '√';
+                }
+                else {
+                    display.textContent += char;
+                }
+                isResultDisplayed = false;
+            }
+        }
+
+        //清空展示区
+
+        function clearDisplay() {
+            document.getElementById('display').textContent = '';
+            isResultDisplayed = false;
+        }
+
+        //删除键
+        function deleteChar() {
+            const display = document.getElementById('display');
+            display.textContent = display.textContent.slice(0, -1);
+        }
+
+        //修改 calculate 函数以确保在计算前处理其他功能
+        function calculate() {
+            const display = document.getElementById('display');
+            let expression = display.textContent;
+            let result;
+
+            try {
+                result = eval(expression);
+                display.textContent = result;
+                addHistory(expression, result);
+                isResultDisplayed = true;
+            } catch {
+                display.textContent = '错误';
+                isResultDisplayed = false;
+            }
+        }
+
+        function addHistory(expression, result) {
+            const historyDiv = document.getElementById('history');
+            history.unshift(`${expression} = ${result}`);
+            if (history.length > 10) {
+                history.pop();
+            }
+
+            historyDiv.innerHTML = '';
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.textContent = item;
+                historyDiv.appendChild(div);
+            });
+        }
+
+
+        //x^y功能
+        function promptForExponent() {
+            const base = parseFloat(document.getElementById('display').textContent);
+            let exponent = prompt("请输入指数：", "1"); // 默认值为1
+            if (exponent !== null && !isNaN(exponent)) {
+                exponent = parseFloat(exponent);
+                let result = Math.pow(base, exponent);
+                document.getElementById('display').textContent = result;
+                addHistory(`${base}^${exponent}`, result);
+                isResultDisplayed = true;
+            } else {
+                document.getElementById('display').textContent = '错误';
+                isResultDisplayed = false;
+            }
+        }
+
+        //开平方根功能
+        function calculateSquareRoot() {
+            const display = document.getElementById('display');
+            let current = parseFloat(display.textContent);
+            if (!isNaN(current)) {
+                if (current < 0) {
+                    display.textContent = '错误：不能对负数开平方根';
+                    isResultDisplayed = false;
+                } else {
+                    let result = Math.sqrt(current);
+                    display.textContent = result;
+                    addHistory(`√${current}`, result);
+                    isResultDisplayed = true;
+                }
+            } else {
+                display.textContent = '错误';
+                isResultDisplayed = false;
+            }
+        }
+
+        //lg功能
+        function calculateLogBase10() {
+            const display = document.getElementById('display');
+            let current = parseFloat(display.textContent);
+            if (!isNaN(current) && current > 0) {
+                let result = Math.log10(current);
+                display.textContent = result;
+                addHistory(`lg(${current})`, result);
+                isResultDisplayed = true;
+            } else {
+                display.textContent = '错误：对数的参数必须大于0';
+                isResultDisplayed = false;
+            }
+        }
+
+        //ln功能
+        function calculateNaturalLog() {
+            const display = document.getElementById('display');
+            let current = parseFloat(display.textContent);
+            if (!isNaN(current) && current > 0) {
+                let result = Math.log(current); // Math.log 计算的是自然对数（以 e 为底）
+                display.textContent = result;
+                addHistory(`ln(${current})`, result);
+                isResultDisplayed = true;
+            } else {
+                display.textContent = '错误：自然对数的参数必须大于0';
+                isResultDisplayed = false;
+            }
+        }
+
+        // 修改 appendChar 函数以处理自然对数
+        // function appendChar(char) {
+        //     const display = document.getElementById('display');
+        //     if (display.textContent.endsWith('ln(')) {
+        //         // 如果用户正在尝试输入自然对数的真数
+        //         if (char === ')') {
+        //             // 如果输入了闭合的括号，计算自然对数
+        //             let argument = display.textContent.slice(3, -1);
+        //             let result = Math.log(parseFloat(argument));
+        //             display.textContent = result;
+        //             isResultDisplayed = true;
+        //         } else {
+        //             // 允许用户在自然对数函数中输入真数
+        //             display.textContent += char;
+        //         }
+        //     } else {
+        //         // 正常显示字符
+        //         display.textContent += char;
+        //     }
+        //     isResultDisplayed = false;
+        // }
+    </script>
+
+</body>
+
+</html>
